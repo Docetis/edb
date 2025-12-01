@@ -1,8 +1,8 @@
 class Edb < Formula
   desc "eXist-DB CLI toolkit – export/import, watch-sync, XAR build, backup & rollback"
   homepage "https://github.com/Docetis/edb"
-  url "https://github.com/Docetis/edb/archive/refs/tags/v0.0.1.tar.gz"
-  sha256 "8f300a5b525d926e21514f1fb0eaf53c16a0b89dbbcf9524e6b3f6ff403504d6"
+  url "https://github.com/Docetis/edb/archive/refs/tags/v0.0.3.tar.gz"
+  sha256 "84923b717522a5b6ede62b6e69c48c12c71f6c1015d367c48919530d59f1d19f"
   license "MIT"
 
   depends_on "curl"
