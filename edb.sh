@@ -5,10 +5,19 @@ set -euo pipefail
 ### LOAD CONFIG IF EXISTS (.env)
 #############################################
 
+# Directory where the script itself lives (useful if ever needed)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="$SCRIPT_DIR/.env"
 
+# Directory where the user is running the command (project root)
+WORK_DIR="$(pwd)"
+
+# .env is project-specific: default to current working directory.
+# You can override with EDB_ENV_FILE if you really want a custom path.
+ENV_FILE="${EDB_ENV_FILE:-$WORK_DIR/.env}"
+
+# Load config if present
 [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
+
 
 #############################################
 ### DEFAULTS (used if .env missing)
@@ -24,11 +33,11 @@ REST_BASE="$SERVER_URL/rest"
 
 ### XAR defaults
 XAR_NAME="${EDB_XAR_NAME:-$(basename "$EXIST_COLLECTION")}"
-XAR_DIST_DIR="${EDB_XAR_DIST_DIR:-$SCRIPT_DIR/dist}"
+XAR_DIST_DIR="${EDB_XAR_DIST_DIR:-$WORK_DIR/dist}"
 
 ### BACKUP defaults
-BACKUP_DIR="${EDB_BACKUP_DIR:-$SCRIPT_DIR/backups}"
-BACKUP_KEEP="${EDB_BACKUP_KEEP:-10}"   # max number of backups to keep
+BACKUP_DIR="${EDB_BACKUP_DIR:-$WORK_DIR/backups}"
+BACKUP_KEEP="${EDB_BACKUP_KEEP:-10}"
 
 #############################################
 ### HELP
