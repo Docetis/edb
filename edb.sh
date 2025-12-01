@@ -2,7 +2,7 @@
 set -euo pipefail
 
 #############################################
-### LOAD CONFIG IF EXISTS (.env)
+### PATHS & CONFIG FILE
 #############################################
 
 # Directory where the script itself lives (useful if ever needed)
@@ -17,7 +17,6 @@ ENV_FILE="${EDB_ENV_FILE:-$WORK_DIR/.env}"
 
 # Load config if present
 [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
-
 
 #############################################
 ### DEFAULTS (used if .env missing)
@@ -37,7 +36,7 @@ XAR_DIST_DIR="${EDB_XAR_DIST_DIR:-$WORK_DIR/dist}"
 
 ### BACKUP defaults
 BACKUP_DIR="${EDB_BACKUP_DIR:-$WORK_DIR/backups}"
-BACKUP_KEEP="${EDB_BACKUP_KEEP:-10}"
+BACKUP_KEEP="${EDB_BACKUP_KEEP:-10}"   # max number of backups to keep
 
 #############################################
 ### HELP
@@ -86,7 +85,7 @@ do_init() {
         echo '# EDB_BACKUP_KEEP=10'
     } > "$ENV_FILE"
 
-    echo "Created .env — adjust it, then run:"
+    echo "Created .env in $ENV_FILE — adjust it, then run:"
     echo "   edb export   or   edb import"
 }
 
@@ -241,15 +240,21 @@ do_backup() {
 
     echo "✔ BACKUP COMPLETE → $target_root"
 
-    # ---- BACKUP ROTATION ----
+    # ---- BACKUP ROTATION (without mapfile) ----
     if [[ "$BACKUP_KEEP" -gt 0 ]] && [[ -d "$BACKUP_DIR/$app_name" ]]; then
-        mapfile -t backups < <(ls -1d "$BACKUP_DIR/$app_name"/* 2>/dev/null | sort)
+        local backups=()
+        # we assume no spaces in backup dir names (timestamps)
+        while IFS= read -r line; do
+            backups+=("$line")
+        done < <(ls -1d "$BACKUP_DIR/$app_name"/* 2>/dev/null | sort)
+
         local count="${#backups[@]}"
 
         if (( count > BACKUP_KEEP )); then
             local to_delete=$((count - BACKUP_KEEP))
             echo "🧹 Rotating backups (keep=$BACKUP_KEEP, total=$count)"
 
+            local i
             for ((i=0; i<to_delete; i++)); do
                 echo "   rm -rf ${backups[$i]}"
                 rm -rf "${backups[$i]}"
@@ -464,7 +469,11 @@ do_rollback() {
         exit 1
     }
 
-    mapfile -t backups < <(ls -1d "$app_backup_root"/* 2>/dev/null | sort)
+    local backups=()
+    while IFS= read -r line; do
+        backups+=("$line")
+    done < <(ls -1d "$app_backup_root"/* 2>/dev/null | sort)
+
     local count="${#backups[@]}"
 
     (( count == 0 )) && {
@@ -477,12 +486,12 @@ do_rollback() {
     if [[ "$target" == "last" ]]; then
         chosen="${backups[$((count - 1))]}"
     else
-        # explicit timestamp
         if [[ -d "$app_backup_root/$target" ]]; then
             chosen="$app_backup_root/$target"
         else
             echo "Requested backup timestamp '$target' not found."
             echo "Available backups:"
+            local b
             for b in "${backups[@]}"; do
                 echo "  - $(basename "$b")"
             done
