@@ -146,10 +146,22 @@ do_export() {
                 continue
             fi
 
-            echo "⬇ $rel/$name"
-            curl -s -u "$USER:$PASS" \
-                 "$REST_BASE$dbpath/$name" \
-                 -o "$LOCAL_DIR/$rel/$name"
+          echo "⬇ $rel/$name"
+
+          url="$REST_BASE$dbpath/$name"
+
+          case "$name" in
+            *.xq|*.xql|*.xqm|*.xquery)
+              # Per XQuery (incl. library modules) chiedi il sorgente invece dell'esecuzione
+              url="$url?_source=yes"
+              ;;
+            *.xml|*.xsl|*.xslt)
+              # Evita trasformazioni XSLT automatiche quando scarichi XML
+              url="$url?_xsl=no"
+              ;;
+          esac
+
+          curl -s -u "$USER:$PASS" "$url" -o "$LOCAL_DIR/$rel/$name"
         done
 
         # ---- DIRECTORIES (with simple loop guard) ----
